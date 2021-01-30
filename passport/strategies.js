@@ -1,6 +1,8 @@
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
 
-const GoogleStrategy = require('passport-google-token').Strategy;
+const database = require('../database');
+
+var GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 /**
  * Registers all passport authentication strategiess
@@ -8,56 +10,20 @@ const GoogleStrategy = require('passport-google-token').Strategy;
  * @param {Object} passport - passport object
  */
 exports.register = (passport) => {
-  // Use the GoogleStrategy within Passport.
-  //   Strategies in Passport require a `verify` function, which accept
-  //   credentials (in this case, an accessToken, refreshToken, and Google
-  //   profile), and invoke a callback with a user object.
-  const callbackURL =
-    process.env.NODE_ENV === 'dev'
-      ? 'http://localhost:8080/api/auth/google/callback'
-      : 'https://www.mealwrm.com/api/auth/google/callback';
+  const callbackURL = 'http://localhost:8080/auth/google/callback'
 
-  passport.use(
-    'google-token-login',
-    new GoogleStrategy(
-      {
+    // Use Google oauth2 strategy
+    passport.use(new GoogleStrategy({
         clientID: GOOGLE_CLIENT_ID,
         clientSecret: GOOGLE_CLIENT_SECRET,
         callbackURL,
       },
-      async (accessToken, refreshToken, data, done) => {
-        const info = data._json;
-        if (info.email) {
-          // Find user
-          if (user) {
-            return done(null, user);
-          }
-        }
+      (accessToken, refreshToken, data, done) => {
+        // Find user email in mock database
+        const user = database.users.find((user) => user.email === data._json.email);
+        if (user) return done(null, user);
 
-        return done(null, false);
-      },
-    ),
-  );
-
-  passport.use(
-    'google-token-register',
-    new GoogleStrategy(
-      {
-        clientID: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL,
-      },
-      async (accessToken, refreshToken, data, done) => {
-        const info = data._json;
-        if (info.email) {
-          const { email } = info;
-          // Check for existing, create otherwise
-
-          return done(null, newUser);
-        }
-
-        return done(null, false);
-      },
-    ),
-  );
+        return done();
+      }
+    ));
 };

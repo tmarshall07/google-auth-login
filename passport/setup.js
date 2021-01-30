@@ -1,12 +1,17 @@
+const { users } = require("../database");
+
 module.exports = (passport) => {
-  // Used to serialize the user for the session on the front end (only expose user id)
   passport.serializeUser((user, done) => {
+    // Store the userId in the session so we can retrieve it later
     done(null, user.id);
   });
 
-  // Used to deserialize the user for use on the backend
   passport.deserializeUser((id, done) => {
+    // Find user in database by stored session userId
+    const user = users.find((u) => u.id === id);
+    if (!user) return done('User not found');
+
     // Find user
-    done(err, user);
+    done(null, user);
   });
 };
